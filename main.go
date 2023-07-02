@@ -25,17 +25,17 @@ func homepage(w http.ResponseWriter, r *http.Request) {
 	fmt.Println("Hompage endpoint")
 }
 
-func list(w http.ResponseWriter, r *http.Request) {
-
+func getBooks(w http.ResponseWriter, r *http.Request) {
+	//return func -- has to get context
 }
 
 func handleRequsts(ctx context.Context, collection *mongo.Collection) {
 
 	r := mux.NewRouter()
 	r.HandleFunc("/", homepage)
-	r.HandleFunc("/list", list)
+	r.HandleFunc("/books", getBooks).Methods("GET")
 
-	http.ListenAndServe(":8080", r)
+	log.Fatal(http.ListenAndServe(":8080", r))
 }
 
 func main() {
