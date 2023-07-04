@@ -96,9 +96,48 @@ func getBooks(w http.ResponseWriter, r *http.Request) {
 
 }
 
+func getBook(w http.ResponseWriter, r *http.Request) {
+
+	vars := mux.Vars(r)
+
+	bookTitle := vars["title"]
+
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	var book Book
+
+	filter := bson.D{{"title", bookTitle}}
+
+	err := collection.FindOne(ctx, filter).Decode(&book)
+	if err != nil {
+		fmt.Fprintf(w, "No book titled '%s'", bookTitle)
+		//log.Fatal(err)
+	} else {
+		fmt.Printf("Title: %s\nAuthor: %s\n", book.Title, book.Author)
+		fmt.Fprintf(w, "Title: %s\nAuthor: %s\n", book.Title, book.Author)
+	}
+
+}
+
+func deleteBook(w http.ResponseWriter, r *http.Request) {
+
+	vars := mux.Vars(r)
+
+	bookTitle := vars["title"]
+
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	var book Book := bson.D{{}}
+
+}
+
 func useRoute(router *mux.Router) {
 	router.HandleFunc("/", homepage)
 	router.HandleFunc("/books", getBooks).Methods("GET")
+	router.HandleFunc("/books/{title}", getBook).Methods("GET")
+	router.HandleFunc("/books/{title}", deleteBook).Methods("DELETE")
 }
 
 func main() {
