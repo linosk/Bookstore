@@ -110,6 +110,7 @@ func getBook(w http.ResponseWriter, r *http.Request) {
 	filter := bson.D{{"title", bookTitle}}
 
 	err := collection.FindOne(ctx, filter).Decode(&book)
+	fmt.Println(err)
 	if err != nil {
 		fmt.Fprintf(w, "No book titled '%s'", bookTitle)
 		//log.Fatal(err)
@@ -129,7 +130,21 @@ func deleteBook(w http.ResponseWriter, r *http.Request) {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
-	var book Book := bson.D{{}}
+	filter := bson.D{{"title", bookTitle}}
+	res, err := collection.DeleteOne(ctx, filter)
+	fmt.Println(err)
+	if err != nil {
+		//fmt.Fprintf(w, "No book titled '%s'", bookTitle)
+		log.Fatal(err)
+	}
+
+	if res.DeletedCount > 0 {
+		fmt.Printf("%s was deleted, %v", bookTitle, res.DeletedCount)
+		fmt.Fprintf(w, "%s was deleted %v", bookTitle, res.DeletedCount)
+	} else {
+		fmt.Printf("No book titled %s", bookTitle)
+		fmt.Fprintf(w, "No book titled %s", bookTitle)
+	}
 
 }
 
