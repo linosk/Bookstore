@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"log"
 	"net/http"
@@ -148,11 +149,80 @@ func deleteBook(w http.ResponseWriter, r *http.Request) {
 
 }
 
+func addBook(w http.ResponseWriter, r *http.Request) {
+
+	var book Book
+	_ = json.NewDecoder(r.Body).Decode(&book)
+
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	_, err := collection.InsertOne(ctx, book)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	fmt.Println("Insert")
+}
+
+func replaceBook(w http.ResponseWriter, r *http.Request) {
+
+	vars := mux.Vars(r)
+
+	bookTitle := vars["title"]
+
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	filter := bson.D{{"title", bookTitle}}
+
+	var book_old Book
+
+	err := collection.FindOne(ctx, filter).Decode(&book_old)
+	if err != nil {
+		fmt.Fprintf(w, "No book titled '%s'", bookTitle)
+	} else {
+
+		var book_new Book
+
+		_ = json.NewDecoder(r.Body).Decode(&book_new)
+
+		_, err := collection.ReplaceOne(ctx, filter, book_new)
+		if err != nil {
+			log.Fatal(err)
+		}
+
+	}
+
+	//res, err := collection.DeleteOne(ctx, filter)
+	//fmt.Println(err)
+	//if err != nil {
+	//	//fmt.Fprintf(w, "No book titled '%s'", bookTitle)
+	//	log.Fatal(err)
+	//}
+	//
+	//if res.DeletedCount > 0 {
+	//	fmt.Printf("%s was deleted, %v", bookTitle, res.DeletedCount)
+	//	fmt.Fprintf(w, "%s was deleted %v", bookTitle, res.DeletedCount)
+	//} else {
+	//	fmt.Printf("No book titled %s", bookTitle)
+	//	fmt.Fprintf(w, "No book titled %s", bookTitle)
+	//}
+
+}
+
+//func updateBook(w http.ResponseWriter, r *http.Request) {
+//
+//}
+
 func useRoute(router *mux.Router) {
 	router.HandleFunc("/", homepage)
 	router.HandleFunc("/books", getBooks).Methods("GET")
 	router.HandleFunc("/books/{title}", getBook).Methods("GET")
 	router.HandleFunc("/books/{title}", deleteBook).Methods("DELETE")
+	router.HandleFunc("/books", addBook).Methods("POST")
+	router.HandleFunc("/books/{title}", replaceBook).Methods("PUT", "PATCH")
+	//router.HandleFunc("/books/{title}", updateBook).Methods("PATCH")
 }
 
 func main() {
