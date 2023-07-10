@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"log"
 	"net/http"
@@ -67,11 +68,23 @@ type Book struct {
 	Author string
 }
 
+// This could be extended
+func validateBook(book Book) error {
+	if len(book.Author) == 0 {
+		return errors.New("")
+	}
+
+	if len(book.Title) == 0 {
+		return errors.New("")
+	}
+
+	return nil
+}
+
 func getBooks(w http.ResponseWriter, r *http.Request) {
 
 	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
 	defer cancel()
-
 	findOptions := options.Find()
 	cursor, err := collection.Find(ctx, bson.D{{}}, findOptions)
 
@@ -152,17 +165,27 @@ func deleteBook(w http.ResponseWriter, r *http.Request) {
 func addBook(w http.ResponseWriter, r *http.Request) {
 
 	var book Book
-	_ = json.NewDecoder(r.Body).Decode(&book)
-
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-
-	_, err := collection.InsertOne(ctx, book)
+	err := json.NewDecoder(r.Body).Decode(&book)
 	if err != nil {
-		log.Fatal(err)
+		fmt.Fprintf(w, "Incorrect data format.")
+		return
 	}
 
-	fmt.Println("Insert")
+	err = validateBook(book)
+	if err != nil {
+		fmt.Fprintf(w, "Missing field values.")
+	} else {
+
+		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+		defer cancel()
+
+		_, err = collection.InsertOne(ctx, book)
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		fmt.Println("Insert")
+	}
 }
 
 func replaceBook(w http.ResponseWriter, r *http.Request) {
@@ -184,36 +207,26 @@ func replaceBook(w http.ResponseWriter, r *http.Request) {
 	} else {
 
 		var book_new Book
+		err = json.NewDecoder(r.Body).Decode(&book_new)
 
-		_ = json.NewDecoder(r.Body).Decode(&book_new)
-
-		_, err := collection.ReplaceOne(ctx, filter, book_new)
 		if err != nil {
-			log.Fatal(err)
+			fmt.Fprintf(w, "Incorrect data format.")
+			return
+		}
+
+		err = validateBook(book_new)
+		if err != nil {
+			fmt.Fprintf(w, "Missing field values.")
+		} else {
+			_, err := collection.ReplaceOne(ctx, filter, book_new)
+			if err != nil {
+				log.Fatal(err)
+			}
 		}
 
 	}
 
-	//res, err := collection.DeleteOne(ctx, filter)
-	//fmt.Println(err)
-	//if err != nil {
-	//	//fmt.Fprintf(w, "No book titled '%s'", bookTitle)
-	//	log.Fatal(err)
-	//}
-	//
-	//if res.DeletedCount > 0 {
-	//	fmt.Printf("%s was deleted, %v", bookTitle, res.DeletedCount)
-	//	fmt.Fprintf(w, "%s was deleted %v", bookTitle, res.DeletedCount)
-	//} else {
-	//	fmt.Printf("No book titled %s", bookTitle)
-	//	fmt.Fprintf(w, "No book titled %s", bookTitle)
-	//}
-
 }
-
-//func updateBook(w http.ResponseWriter, r *http.Request) {
-//
-//}
 
 func useRoute(router *mux.Router) {
 	router.HandleFunc("/", homepage)
@@ -222,7 +235,6 @@ func useRoute(router *mux.Router) {
 	router.HandleFunc("/books/{title}", deleteBook).Methods("DELETE")
 	router.HandleFunc("/books", addBook).Methods("POST")
 	router.HandleFunc("/books/{title}", replaceBook).Methods("PUT", "PATCH")
-	//router.HandleFunc("/books/{title}", updateBook).Methods("PATCH")
 }
 
 func main() {
