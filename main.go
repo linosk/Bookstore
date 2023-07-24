@@ -127,7 +127,6 @@ func getBook(w http.ResponseWriter, r *http.Request) {
 	fmt.Println(err)
 	if err != nil {
 		fmt.Fprintf(w, "No book titled '%s'", bookTitle)
-		//log.Fatal(err)
 	} else {
 		fmt.Printf("Title: %s\nAuthor: %s\n", book.Title, book.Author)
 		fmt.Fprintf(w, "Title: %s\nAuthor: %s\n", book.Title, book.Author)
