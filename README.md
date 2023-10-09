@@ -1,8 +1,8 @@
 # Bookstore
-Simple Rest API for bookstore in GO
+Simple Rest API for bookstore in GO.
 
 # Goal
-Learning about GO, RestAPI and MongoDB
+Learning about GO, RestAPI and MongoDB.
 
 # Run
 - go run main.go
